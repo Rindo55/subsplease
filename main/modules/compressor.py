@@ -1,7 +1,6 @@
 import asyncio
 import aiofiles
 import aiohttp
-from html_telegraph_poster import TelegraphPoster
 from pathlib import Path
 
 from main.modules.utils import get_progress_text 
