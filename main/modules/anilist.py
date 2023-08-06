@@ -31,6 +31,11 @@ query ($id: Int, $idMal:Int, $search: String) {
     tags {
       name
     }
+    studios {
+    nodes {
+        name
+    }
+    }
     averageScore
     relations {
       edges {
@@ -86,7 +91,7 @@ async def get_anime(vars_,less):
             print([f"[{error_sts}]"])
             print(vars_)
             data = temp[0]
-            temp.pop(0)
+            temp.pop(0) 
         else:
           data = result["data"]["Media"]   
           temp.append(data)
@@ -126,17 +131,26 @@ atext = """
 📺 **{}**
       **({})**
 **━━━━━━━━━━━━━━━━━━━━━━**
-**• Type: {}
-• Source: {}
-• Score: 🌟{}
-• Genre: #{}
-• Status: {}
-• Episodes: {}
-• Duration: {} mins/Ep
-• Tags: {}**
+▸ **Type**: {}
+▸ **Source**: {}
+▸ **Score**: 🌟{}
+▸ **Episodes**: {}
+▸ **Genre**: #{}
+▸ **Status**: {}
+▸ **Aired**: {}
+▸ **Premiered**: {}
+▸ **Licensors**: {}
+▸ **Studio**: {}
+▸ **Themes**: {}
+▸ **Duration**: {} mins/Ep
+▸ **Rating**: {}
+▸ **Rank**: {} | **Popularity**: {}
 """
 
 async def get_anilist_data(name):
+    malurl = f"https://api.jikan.moe/v4/anime?q={name}"
+    malresponse = requests.get(malurl)
+    maldata = malresponse.json()
     vars_ = {"search": name}
     data = await get_anime(vars_,less=False)
     id_ = data.get("id")
@@ -172,7 +186,7 @@ async def get_anilist_data(name):
     genre = genre.replace("#Slice of Life", "#Slice_of_Life")
     genre = genre.replace("#Mahou Shoujo", "#Mahou_Shoujo")    
     genre = genre.replace("#Sci-Fi", "#SciFi")
-    
+    studiox = data['studios']['nodes'][0]['name']
     tags = []
     for i in data['tags']:
         tags.append(i["name"])
@@ -196,7 +210,7 @@ async def get_anilist_data(name):
     tagsx = tagsx.replace("#Female Protagonist", "#Female_Protagonist")
     tagsx = tagsx.replace("#Full CGI", "#Full_CGI")
     tagsx = tagsx.replace("#Full Color", "#Full_Color")
-    tagsx = tagsx.replace("#Found_Family", "#Found_Family")
+    tagsx = tagsx.replace("#Found Family", "#Found_Family")
     tagsx = tagsx.replace("#Gender Bending", "#Gender_Bending")
     tagsx = tagsx.replace("#Ice Skating", "#Ice_Skating")
     tagsx = tagsx.replace("#Language Barrier", "#Language_Barrier")
@@ -243,17 +257,45 @@ async def get_anilist_data(name):
     tagsx = tagsx.replace("#Classic Literature", "#Classic_Literature")
     tagsx = tagsx.replace("#Tanned Skin", "#Tanned_Skin")
     tagsx = tagsx.replace("#Video Games", "#Video_Games")
-    caption = atext.format(
+    if data and "data" in maldata and len(maldata["data"]) > 0:
+      mal = maldata["data"][0]
+      producer = []
+      for i in mal['producers']:
+        producer.append(i["name"])
+      producer = ", ".join(producer)
+      licensor = []
+      for i in mal['licensors']:
+        licensor.append(i["name"])
+      licensor = ", ".join(licensor)
+      theme = []
+      for i in mal['themes']:
+        theme.append(i["name"])
+      theme = ", ".join(theme)
+      season = f"{mal['season']} {mal['year']}"
+      rating = mal['rating']
+      aired = mal['aired']['string']
+      malink = mal['url']
+      malrank = mal['rank']
+      malpopularity = mal['popularity']
+      
+      caption = atext.format(
       title1,
       title2,
       form,
-      source,
+      source,   
       averageScore,
+      episodes,
       genre,
       status,
-      episodes,
+      aired,
+      season,
+      licensor,
+      studiox,
+      theme,
       duration,
-      tagsx  
+      rating,
+      malrank,
+      malpopularity
     )
 
     if trailer != None:
@@ -263,8 +305,8 @@ async def get_anilist_data(name):
       site = None
 
     if site == "youtube":
-      caption += f"**• [Trailer](https://www.youtube.com/watch?v={ytid})  |  [More Info](https://anilist.co/anime/{id_})\n ━━━━━━━━━━━━━━━━━━━━━━\n@Latest_ongoing_airing_anime**"
+      caption += f"\n**▸ Links: [Trailer](https://www.youtube.com/watch?v={ytid}) | [AniList](https://anilist.co/anime/{id_}) | [MAL]({malink})\n ━━━━━━━━━━━━━━━━━━━━━━\n@Latest_ongoing_airing_anime**"
     else:
-      caption += f"**• [More Info](https://anilist.co/anime/{id_})\n━━━━━━━━━━━━━━━━━━━━━━\n@Latest_ongoing_airing_anime**"
+      caption += f"\n**▸ Links: [AniList](https://anilist.co/anime/{id_}) | [MAL]({malink})\n━━━━━━━━━━━━━━━━━━━━━━\n@Latest_ongoing_airing_anime**"
 
     return img, caption
